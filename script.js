@@ -431,7 +431,7 @@ ShaddasMiningMod.copyTextToClipboard = function(text) {
     document.body.removeChild(textArea);
 }
 
-//only setup the mod if on the mining page
+//only set up the mod if on the mining page
 if (window.location.href == "https://ageoftrades.com/game/mining") {
     ShaddasMiningMod.logging = false;
 
