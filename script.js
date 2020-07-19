@@ -126,7 +126,11 @@ ShaddasMiningMod.getAllMiningLocations = function() {
 
 //checks whether the current food is depleted or not
 ShaddasMiningMod.checkCurrentFood = function() {
-    if (Number.parseInt(document.getElementById(ShaddasMiningMod.currentFood).children[1].innerHTML)>0) {
+    let div = document.getElementById(ShaddasMiningMod.currentFood);
+    if (div==null) {
+        return true;
+    }
+    if (Number.parseInt(div.children[1].innerHTML)>0) {
         return true;
     } else {
         return false;
