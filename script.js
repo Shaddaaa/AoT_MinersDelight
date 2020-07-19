@@ -86,6 +86,9 @@ ShaddasMiningMod.setTimer = function(time) {
 
 //removes the current prospectus card
 ShaddasMiningMod.removeProspectus = function() {
+    if (!ShaddasMiningMod.autoMining) {
+        return;
+    }
     let miningPage = document.getElementById("mining-page");
     let prospecting = miningPage.children;
     let brokeOut = false;
