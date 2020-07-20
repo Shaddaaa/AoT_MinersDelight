@@ -11,7 +11,7 @@ ShaddasMiningMod.goMining = async function(area = "/game/mining/prospect_field?f
     },
     "method": "POST",
     "mode": "cors"
-    });
+    }).catch(error => console.log(error));
 
     await fetch("https://ageoftrades.com/game/mining/start_mining", {
     "headers": {
@@ -27,7 +27,7 @@ ShaddasMiningMod.goMining = async function(area = "/game/mining/prospect_field?f
             ShaddasMiningMod.setTimer(timeLeft);
             setTimeout(ShaddasMiningMod.mineAgain, timeLeft+500);
         });
-    });
+    }).catch(error => {ShaddasMiningMod.mineAgain(); console.log(error); console.log("error??");});
 }
 
 //toggles the automining functionality on and off
@@ -131,7 +131,7 @@ ShaddasMiningMod.getAllMiningLocations = function() {
 ShaddasMiningMod.checkCurrentFood = function() {
     let div = document.getElementById(ShaddasMiningMod.currentFood);
     if (div==null) {
-        return true;
+        return document.getElementById("foodEnergyCard")==null;
     }
     if (Number.parseInt(div.children[1].innerHTML)>0) {
         return true;
@@ -170,7 +170,7 @@ ShaddasMiningMod.foodCyclingStuff = async function() {
 //two functionalities:
 //1. creates a list of all foods
 //2. adds ids to each food tablerow, which needs to be done again and again as the cards all get reset periodically
-ShaddasMiningMod.getAllFoods = function() {
+ShaddasMiningMod.getAllFoods = function(setup = false) {
     let tableRows = document.getElementById("mining-page").children;
     for (let child of tableRows) {
         if (child.children[0].innerHTML == "\nFood (energy)\n" || child.children[0].innerHTML == "Food (energy)") {
@@ -178,6 +178,7 @@ ShaddasMiningMod.getAllFoods = function() {
             break;
         }
     }
+    tableRows.id = "foodEnergyCard";
     tableRows = tableRows.children[1].children[1].children[1].children;
     let food = [];
     for (let row of tableRows) {
@@ -189,7 +190,7 @@ ShaddasMiningMod.getAllFoods = function() {
         row.id = name;
         food.push(name);
 
-        if (row.children[3].innerHTML == "\nCurrently selected\n" || row.children[3].innerHTML == "Currently selected") {
+        if (setup && (row.children[3].innerHTML == "\nCurrently selected\n" || row.children[3].innerHTML == "Currently selected")) {
             ShaddasMiningMod.currentFood = name;
         }
     }
@@ -440,10 +441,10 @@ ShaddasMiningMod.copyTextToClipboard = function(text) {
 
 //only set up the mod if on the mining page
 if (window.location.href == "https://ageoftrades.com/game/mining") {
-    ShaddasMiningMod.logging = false;
+    ShaddasMiningMod.logging = true;
 
     ShaddasMiningMod.miningLocations = ShaddasMiningMod.getAllMiningLocations();
-    ShaddasMiningMod.foods = ShaddasMiningMod.getAllFoods();
+    ShaddasMiningMod.foods = ShaddasMiningMod.getAllFoods(true);
     ShaddasMiningMod.setupUI();
     setInterval(ShaddasMiningMod.keepUI, 1000);
     setInterval(ShaddasMiningMod.removeProspectus, 1000);
