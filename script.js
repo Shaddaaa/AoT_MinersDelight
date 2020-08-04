@@ -13,6 +13,8 @@ ShaddasMiningMod.goMining = async function(area = "/game/mining/prospect_field?f
     "mode": "cors"
     }).catch(error => console.log(error));
 
+    await ShaddasMiningMod.logProspect();
+
     await fetch("https://ageoftrades.com/game/mining/start_mining", {
     "headers": {
         "X-CSRF-Token": ShaddasMiningMod.CSRFToken
@@ -100,8 +102,6 @@ ShaddasMiningMod.removeProspectus = function() {
         }
     }
     if (brokeOut) {
-        ShaddasMiningMod.logProspect(prospecting);
-        ShaddasMiningMod.logResult();
         miningPage.removeChild(prospecting);
     }
 }
@@ -117,12 +117,16 @@ ShaddasMiningMod.getAllMiningLocations = function() {
     }
     tableRows = tableRows.children[1].children[0].children[0].children;
     let locations = {};
+    let shouldError = true;
     for (let row of tableRows) {
         let name = row.children[0].innerHTML;
-        if (row.children[1].children[0]==null) {
-            return {"Reload the page once you are not currently mining AND you have selected a non-depleted food so that the mod can do its magic":undefined};
+        if (row.children[1].children[0]!=null) {
+            locations[name] = row.children[1].children[0].href;
+            shouldError = false;
         }
-        locations[name] = row.children[1].children[0].href;
+    }
+    if (shouldError) {
+        return {"Reload the page once you are not currently mining AND you have selected a non-depleted food so that the mod can do its magic":undefined};
     }
     return locations;
 }
@@ -281,17 +285,58 @@ ShaddasMiningMod.keepUI = function() {
 }
 
 //logging stuff, disabled by default (if I remember to switch ShaddasMiningMod.logging to false...)
-ShaddasMiningMod.logProspect = function(pElement) {
+ShaddasMiningMod.logProspect = async function(doc) {
     if (!ShaddasMiningMod.logging) {
         return;
     }
+
+    //if there is no doc specified, get a refreshed document of the mining page and call this function again
+    if (doc==null) {
+        
+        await fetch("https://ageoftrades.com/game/mining", {
+            "headers": {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            },
+        }).then(res => {
+            res.text().then(res2 => {
+                let doc = document.implementation.createDocument('http://www.w3.org/1999/xhtml', 'html', null);
+                let wrapper = document.createElement("div");
+                wrapper.innerHTML = res2;
+                doc.documentElement.appendChild(wrapper);
+                ShaddasMiningMod.logProspect(doc);
+            });
+        });
+        return;
+    }
+    
+    let miningPage = doc.getElementById("mining-page");
+    let prospecting = miningPage.children;
+    let brokeOut = false;
+    for (let child of prospecting) {
+        if (child.children[0].innerHTML == "\nCurrent prospectus\n" || child.children[0].innerHTML == "Current prospectus") {
+            prospecting = child;
+            brokeOut = true;
+            break;
+        }
+    }
+
+    if (!brokeOut) {
+        return;
+    }
+
+    let table = prospecting.children[1].children[0].children[0];
+    if (table.children[0]==null) {
+        return;
+    }
+
+
     let logArr = JSON.parse(localStorage.getItem("ShaddasMiningModPLog"));
     if (logArr==null) {
         logArr = [];
     }
     let entryObj = {};
     let now = Date.now();
-    let table = pElement.children[1].children[0].children[0];
+
     entryObj["area"] = table.children[0].children[1].innerHTML.replace(/\n/g, "");
     entryObj["food"] = table.children[1].children[1].innerHTML.replace(/\n/g, "");
     let tmp = table.children[2].children[1].innerHTML.replace(/\n/g, "").replace("I'm able to mine a", "").replace(" amount of","").replace("orein ","").replace(" seconds", "").split(" ");
@@ -344,15 +389,15 @@ ShaddasMiningMod.logResult = function() {
 
 //returns the prospect logs in a excel-pastable format
 ShaddasMiningMod.getPLog = function() {
-	let pLog = JSON.parse(localStorage.getItem("ShaddasMiningModPLog"));
-	let ret = "";
-	for (let [key, value] of Object.entries(pLog[0])) {
-        ret += key + "	";
+    let pLog = JSON.parse(localStorage.getItem("ShaddasMiningModPLog"));
+    let ret = "";
+    for (let [key, value] of Object.entries(pLog[0])) {
+        ret += key + "  ";
     }
     ret += "\n";
     for (let i = 0; i < pLog.length; i++) {
         for (let [key, value] of Object.entries(pLog[i])) {
-            ret += value + "	";
+            ret += value + "    ";
         }
         ret += "\n";
     }
@@ -361,15 +406,15 @@ ShaddasMiningMod.getPLog = function() {
 
 //returns the result logs in a excel-pastable format
 ShaddasMiningMod.getRLog = function() {
-	let rLog = JSON.parse(localStorage.getItem("ShaddasMiningModRLog"));
-	let ret = "";
-	for (let [key, value] of Object.entries(rLog[0])) {
-        ret += key + "	";
+    let rLog = JSON.parse(localStorage.getItem("ShaddasMiningModRLog"));
+    let ret = "";
+    for (let [key, value] of Object.entries(rLog[0])) {
+        ret += key + "  ";
     }
     ret += "\n";
     for (let i = 0; i < rLog.length; i++) {
         for (let [key, value] of Object.entries(rLog[i])) {
-            ret += value + "	";
+            ret += value + "    ";
         }
         ret += "\n";
     }
@@ -385,20 +430,20 @@ ShaddasMiningMod.getLog = function() {
 
     //add the column headers
     for (let [key, value] of Object.entries(pLog[0])) {
-        ret += key + "	";
+        ret += key + "  ";
     }
-    ret += "||" + "	";
+    ret += "||" + " ";
     for (let [key, value] of Object.entries(rLog[0])) {
-        ret += key + "	";
+        ret += key + "  ";
     }
     ret += "\n";
     for (let i = 0; i < rLog.length; i++) {
         for (let [key, value] of Object.entries(pLog[i])) {
-            ret += value + "	";
+            ret += value + "    ";
         }
-        ret += "	";
+        ret += "    ";
         for (let [key, value] of Object.entries(rLog[i])) {
-            ret += value + "	";
+            ret += value + "    ";
         }
         ret += "\n";
     }
@@ -410,13 +455,13 @@ ShaddasMiningMod.createLogButton = function(type = "a") {
     let button = document.createElement("button");
     button.innerHTML = "Get Logs!";
     button.onclick = ()=> {
-    	if (type==="a") {
-    		ShaddasMiningMod.copyTextToClipboard(ShaddasMiningMod.getLog());
-    	} else if (type==="p") {
+        if (type==="a") {
+            ShaddasMiningMod.copyTextToClipboard(ShaddasMiningMod.getLog());
+        } else if (type==="p") {
             ShaddasMiningMod.copyTextToClipboard(ShaddasMiningMod.getPLog());
-    	} else if (type==="r") {
+        } else if (type==="r") {
             ShaddasMiningMod.copyTextToClipboard(ShaddasMiningMod.getRLog());
-    	}
+        }
         document.body.removeChild(button);
     }
     document.body.insertBefore(button, document.body.children[0]);
@@ -441,7 +486,7 @@ ShaddasMiningMod.copyTextToClipboard = function(text) {
 
 //only set up the mod if on the mining page
 if (window.location.href == "https://ageoftrades.com/game/mining") {
-    ShaddasMiningMod.logging = true;
+    ShaddasMiningMod.logging = false;
 
     ShaddasMiningMod.miningLocations = ShaddasMiningMod.getAllMiningLocations();
     ShaddasMiningMod.foods = ShaddasMiningMod.getAllFoods(true);
