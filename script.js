@@ -147,6 +147,9 @@ ShaddasMiningMod.checkCurrentFood = function() {
 //selects the first food that is not depleted
 ShaddasMiningMod.selectNextFood = async function() {
     for (let food of ShaddasMiningMod.foods) {
+        if (document.getElementById(food)==null) {
+            continue;
+        }
         if (Number.parseInt(document.getElementById(food).children[1].innerHTML)>0) {
             fetch("https://ageoftrades.com/game/mining/select_food?food=Item%3A%3A"+food, {
                 "headers": {
